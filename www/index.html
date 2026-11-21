@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1210" />
+  <meta name="description" content="Sound Seer — audio tricorder for phone and tablet mics" />
+  <title>Sound Seer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="splash" class="splash" aria-live="polite">
+    <div class="splash-mark" aria-hidden="true"></div>
+    <h1 class="splash-title">Sound Seer</h1>
+    <p class="splash-sub">audio tricorder</p>
+  </div>
+
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-name">Sound Seer</span>
+        <button id="btn-mic" class="btn btn-mic" type="button" aria-pressed="false">Enable mic</button>
+      </div>
+      <canvas id="strip-wave" class="strip-wave" width="800" height="56" aria-label="Live waveform"></canvas>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Main">
+      <button class="tab active" role="tab" aria-selected="true" data-tab="data">DATA</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="graph">GRAPH</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="toys">TOYS</button>
+    </nav>
+
+    <main class="panels">
+      <!-- DATA -->
+      <section id="panel-data" class="panel active" role="tabpanel">
+        <p class="disclaimer">
+          Readings depend on this device’s microphone and hardware. Not a calibrated SPL meter.
+          Comparisons are approximate for orientation only — not medical or safety certification.
+        </p>
+
+        <div class="mic-row">
+          <label for="mic-select">Input</label>
+          <select id="mic-select"></select>
+          <button id="btn-refresh-mics" class="btn btn-ghost" type="button">Rescan</button>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric">
+            <span class="metric-label">Level</span>
+            <span id="m-db" class="metric-value">— dB</span>
+            <span id="m-db-hold" class="metric-hold">hold —</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">RMS</span>
+            <span id="m-rms" class="metric-value">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Peak</span>
+            <span id="m-peak" class="metric-value">—</span>
+            <span id="m-peak-hold" class="metric-hold">hold —</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Pitch</span>
+            <span id="m-pitch" class="metric-value">— Hz</span>
+            <span id="m-note" class="metric-hold">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">ZCR</span>
+            <span id="m-zcr" class="metric-value">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Centroid</span>
+            <span id="m-centroid" class="metric-value">— Hz</span>
+          </div>
+        </div>
+
+        <div class="loudness-block">
+          <h2>Loudness</h2>
+          <div class="loudness-row">
+            <div class="loudness-bar-wrap">
+              <div id="loudness-bar" class="loudness-bar"></div>
+              <div id="loudness-peak" class="loudness-peak"></div>
+            </div>
+            <div class="loudness-readout">
+              <span id="m-loudness" class="metric-value">— dB</span>
+              <span id="m-compare" class="compare">like: —</span>
+            </div>
+          </div>
+          <button id="btn-reset-peak" class="btn btn-ghost" type="button">Reset peak hold</button>
+        </div>
+      </section>
+
+      <!-- GRAPH -->
+      <section id="panel-graph" class="panel" role="tabpanel" hidden>
+        <div class="graph-toolbar">
+          <label>
+            View
+            <select id="viz-select">
+              <option value="waveform">Waveform</option>
+              <option value="fft">FFT bars</option>
+              <option value="spectrogram">Spectrogram</option>
+              <option value="circular">Circular / radial</option>
+              <option value="waterfall">Waterfall</option>
+            </select>
+          </label>
+          <label>
+            Zoom
+            <select id="zoom-select">
+              <option value="20-80">20–80 Hz</option>
+              <option value="80-3000">80–3000 Hz</option>
+              <option value="20-20000" selected>20 Hz–20 kHz</option>
+              <option value="20-64000">20 Hz–64 kHz</option>
+            </select>
+          </label>
+          <button id="btn-fullscreen" class="btn btn-ghost" type="button">Fullscreen</button>
+          <button id="btn-graph-peak-reset" class="btn btn-ghost" type="button">Reset hold</button>
+        </div>
+        <div id="graph-stage" class="graph-stage">
+          <canvas id="viz-canvas" width="900" height="480" aria-label="Visualizer"></canvas>
+          <div id="band-legend" class="band-legend" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <!-- TOYS -->
+      <section id="panel-toys" class="panel" role="tabpanel" hidden>
+        <div class="toys-layout">
+          <aside class="toys-nav">
+            <h2>Tools</h2>
+            <button class="toy-btn active" data-tool="info" type="button">Mic / device</button>
+            <button class="toy-btn" data-tool="sounds" type="button">Sound toys</button>
+            <button class="toy-btn" data-tool="flashbang" type="button">Flash-to-bang</button>
+            <button class="toy-btn" data-tool="room" type="button">Room size</button>
+            <button class="toy-btn" data-tool="rpm" type="button">RPM from hum</button>
+            <button class="toy-btn" data-tool="leak" type="button">Leak / hiss</button>
+            <button class="toy-btn" data-tool="dose" type="button">Loudness dose</button>
+            <button class="toy-btn" data-tool="periodicity" type="button">Periodicity</button>
+            <button class="toy-btn" data-tool="pitch" type="button">Pitch / note</button>
+            <button class="toy-btn" data-tool="bpm" type="button">BPM finder</button>
+          </aside>
+
+          <div class="toy-panels">
+            <div class="toy-panel active" data-tool-panel="info">
+              <h3>Mic &amp; device</h3>
+              <dl id="device-info" class="info-list"></dl>
+              <p class="hint">Best available input is selected automatically when possible. Change via DATA → Input.</p>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="sounds" hidden>
+              <h3>Sound toys</h3>
+              <div class="btn-row">
+                <button class="btn" data-sound="sweep" type="button">80→30 Hz sweep</button>
+                <button class="btn" data-sound="quindar" type="button">Quindar tone</button>
+                <button class="btn" data-sound="bird" type="button">Bird chirp</button>
+                <button class="btn" data-sound="noise" type="button">White noise + HPF</button>
+                <button class="btn btn-ghost" data-sound="stop" type="button">Stop</button>
+              </div>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="flashbang" hidden>
+              <h3>Flash-to-bang distance</h3>
+              <p class="hint">Tap Flash at the lightning flash, then wait for thunder (auto) or tap Bang.</p>
+              <label>Air temp (°C) <input id="fb-temp" type="number" value="20" step="1" /></label>
+              <div class="btn-row">
+                <button id="fb-flash" class="btn" type="button">Flash</button>
+                <button id="fb-bang" class="btn" type="button">Bang</button>
+                <button id="fb-arm" class="btn btn-ghost" type="button">Arm auto-thunder</button>
+              </div>
+              <p id="fb-result" class="result">—</p>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="room" hidden>
+              <h3>Room size (clap / echo)</h3>
+              <p class="hint">Clap once. Measures delay to first strong echo.</p>
+              <div class="btn-row">
+                <button id="room-arm" class="btn" type="button">Arm for clap</button>
+                <button id="room-reset" class="btn btn-ghost" type="button">Reset</button>
+              </div>
+              <p id="room-result" class="result">—</p>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="rpm" hidden>
+              <h3>RPM from hum</h3>
+              <p class="hint">Point at a motor / fan hum. Assumes fundamental = RPM / poles factor.</p>
+              <label>Poles / pulses per rev
+                <input id="rpm-poles" type="number" value="2" min="1" step="1" />
+              </label>
+              <p id="rpm-result" class="result">—</p>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="leak" hidden>
+              <h3>Leak / hiss finder</h3>
+              <p class="hint">Sweeps high-frequency energy. Move the phone; peak marks likely hiss.</p>
+              <div class="btn-row">
+                <button id="leak-reset" class="btn btn-ghost" type="button">Reset peak</button>
+              </div>
+              <p id="leak-result" class="result">—</p>
+              <canvas id="leak-canvas" width="400" height="80"></canvas>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="dose" hidden>
+              <h3>Loudness dose (ear protection)</h3>
+              <p class="hint">Rough cumulative exposure estimate from relative levels — not NIOSH/OSHA certified.</p>
+              <div class="btn-row">
+                <button id="dose-start" class="btn" type="button">Start / resume</button>
+                <button id="dose-pause" class="btn btn-ghost" type="button">Pause</button>
+                <button id="dose-reset" class="btn btn-ghost" type="button">Reset</button>
+              </div>
+              <p id="dose-result" class="result">—</p>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="periodicity" hidden>
+              <h3>Periodicity</h3>
+              <p class="hint">Dominant period from autocorrelation.</p>
+              <p id="period-result" class="result">—</p>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="pitch" hidden>
+              <h3>Pitch / note finder</h3>
+              <p id="pitch-result" class="result big">—</p>
+              <canvas id="pitch-canvas" width="400" height="100"></canvas>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="bpm" hidden>
+              <h3>BPM finder</h3>
+              <p class="hint">Auto from onset flux, or tap along.</p>
+              <div class="btn-row">
+                <button id="bpm-tap" class="btn" type="button">Tap</button>
+                <button id="bpm-reset" class="btn btn-ghost" type="button">Reset taps</button>
+              </div>
+              <p id="bpm-result" class="result">Auto: — · Tap: —</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

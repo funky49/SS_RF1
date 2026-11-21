@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sound Seer</string>
+    <string name="title_activity_main">Sound Seer</string>
+    <string name="package_name">com.funky49.soundseer</string>
+    <string name="custom_url_scheme">com.funky49.soundseer</string>
+</resources>
