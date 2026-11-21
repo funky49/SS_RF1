@@ -1,0 +1,11 @@
+{
+  "appId": "com.funky49.soundseer",
+  "appName": "Sound Seer",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
