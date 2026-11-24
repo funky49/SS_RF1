@@ -1,4 +1,4 @@
-import { AudioEngine } from "./audio-engine.js";
+import { AudioEngine, micUnavailableReason } from "./audio-engine.js";
 import { loadSettings, saveSettings } from "./storage.js";
 import {
   rmsFromTime,
@@ -92,7 +92,8 @@ async function enableMic() {
     console.error(err);
     els.micBtn.setAttribute("aria-pressed", "false");
     els.micBtn.textContent = "Mic blocked";
-    alert("Microphone permission is required. Allow mic access and try again.\n\n" + (err.message || err));
+    const reason = micUnavailableReason();
+    alert(reason || "Microphone permission is required. Allow mic access and try again.\n\n" + (err.message || err));
   } finally {
     els.micBtn.disabled = false;
   }
@@ -116,6 +117,10 @@ els.micSelect.addEventListener("change", async () => {
 });
 
 els.refreshMics.addEventListener("click", async () => {
+  if (micUnavailableReason()) {
+    fillMicSelect([], "");
+    return;
+  }
   if (!engine.active) {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -229,6 +234,12 @@ function loop() {
 }
 
 // Init UI from settings
+const micReason = micUnavailableReason();
+if (micReason) {
+  const warn = document.getElementById("secure-warning");
+  warn.textContent = micReason;
+  warn.classList.remove("hidden");
+}
 setTab(settings.tab || "data");
 toys.selectTool(settings.tool || "info");
 document.querySelectorAll(".toy-btn").forEach((btn) => {
