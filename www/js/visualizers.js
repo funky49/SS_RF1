@@ -198,7 +198,7 @@ export class VisualizerHost {
   /** Frequency axis orientation for the current mode, or null when no frequency axis applies. */
   freqAxis() {
     if (this.mode === "spectrogram") return "y";
-    if (this.mode === "waveform") return null;
+    if (this.mode === "waveform" || this.mode === "oscilloscope") return null;
     return "x";
   }
 

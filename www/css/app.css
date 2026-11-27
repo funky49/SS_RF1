@@ -387,7 +387,8 @@ html, body {
 
 #viz-canvas.dragging { cursor: grabbing; }
 
-#viz-canvas[data-mode="waveform"] {
+#viz-canvas[data-mode="waveform"],
+#viz-canvas[data-mode="oscilloscope"] {
   touch-action: pan-y;
   cursor: default;
 }
