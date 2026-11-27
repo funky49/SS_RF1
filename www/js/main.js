@@ -32,6 +32,7 @@ const els = {
   micSelect: document.getElementById("mic-select"),
   refreshMics: document.getElementById("btn-refresh-mics"),
   strip: document.getElementById("strip-wave"),
+  graphPanel: document.getElementById("panel-graph"),
   graphStage: document.getElementById("graph-stage"),
   vizCanvas: document.getElementById("viz-canvas"),
   vizSelect: document.getElementById("viz-select"),
@@ -254,7 +255,9 @@ function loop() {
   const frame = engine.active ? engine.pull() : null;
   drawStripWave(els.strip, frame?.time || null);
   updateData(frame);
-  viz.draw(frame);
+  if (!els.graphPanel.hidden) {
+    viz.draw(frame ? engine.pullSpectrum(frame, viz.desiredFftSize(frame.sampleRate)) : null);
+  }
   toys.tick(frame);
   if (frame && performance.now() - lastInfo > 2000) {
     toys.updateDeviceInfo();

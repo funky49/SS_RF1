@@ -1,5 +1,10 @@
 import { BANDS, parseZoom } from "./metrics.js";
 import { OscilloscopeView } from "./scope.js";
+import { chooseFftSize, resampleSpectrum, findSpectrumPeaks } from "./spectrum-res.js";
+
+/** CSS pixels per bin from which FFT bars become a smooth curve with peak labels. */
+const SMOOTH_PX_PER_BIN = 2;
+const WATERFALL_ROWS = 64;
 
 function resizeCanvas(canvas) {
   const rect = canvas.getBoundingClientRect();
@@ -182,8 +187,19 @@ export class VisualizerHost {
     this.waterfallRows = [];
     this.peakBins = null;
     this.peakDecay = 0.92;
+    this.fftSize = 0;
+    this.lastPeaks = null;
+    this.waterfallKey = "";
+    this.waterfallImg = null;
+    this.waterfallCanvas = null;
     canvas.dataset.mode = this.mode;
     this.scope = new OscilloscopeView();
+  }
+
+  /** fftSize the GRAPH spectrum should use for the current mode and (target) view range. */
+  desiredFftSize(sampleRate) {
+    const { minHz, maxHz } = this.anim ? this.anim.to : this.view;
+    return chooseFftSize({ minHz, maxHz, sampleRate, mode: this.mode, current: this.fftSize });
   }
 
   setMode(mode) {
@@ -321,6 +337,12 @@ export class VisualizerHost {
       return;
     }
 
+    if (frame.fftSize !== this.fftSize) {
+      this.fftSize = frame.fftSize;
+      this.peakBins = null;
+      this.lastPeaks = null;
+    }
+
     switch (this.mode) {
       case "waveform":
         this.drawWaveform(ctx, w, h, frame);
@@ -397,26 +419,97 @@ export class VisualizerHost {
       this.peakBins[i] = Math.max(freq[i] / 255, this.peakBins[i] * this.peakDecay);
     }
 
-    const first = Math.max(0, Math.floor(minHz / binHz - 0.5));
-    const last = Math.min(binCount - 1, Math.ceil(maxHz / binHz + 0.5));
-    for (let i = first; i <= last; i++) {
-      const x0 = Math.max(0, ((i - 0.5) * binHz - minHz) / span * w);
-      const x1 = Math.min(w, ((i + 0.5) * binHz - minHz) / span * w);
-      if (x1 <= x0) continue;
-      const bw = Math.max(1, x1 - x0 - (x1 - x0 > 3 ? 1 : 0));
-      const bh = (freq[i] / 255) * (h - 8);
-      const ph = this.peakBins[i] * (h - 8);
-      ctx.fillStyle = "#3ecf8e";
-      ctx.fillRect(x0, h - bh, bw, bh);
-      ctx.fillStyle = "#e8a54b";
-      ctx.fillRect(x0, h - ph - 2, bw, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const smooth = (binHz / span) * (w / dpr) >= SMOOTH_PX_PER_BIN;
+    if (smooth) {
+      this.drawFftCurve(ctx, w, h, frame, minHz, maxHz);
+    } else {
+      this.lastPeaks = null;
+      const first = Math.max(0, Math.floor(minHz / binHz - 0.5));
+      const last = Math.min(binCount - 1, Math.ceil(maxHz / binHz + 0.5));
+      for (let i = first; i <= last; i++) {
+        const x0 = Math.max(0, ((i - 0.5) * binHz - minHz) / span * w);
+        const x1 = Math.min(w, ((i + 0.5) * binHz - minHz) / span * w);
+        if (x1 <= x0) continue;
+        const bw = Math.max(1, x1 - x0 - (x1 - x0 > 3 ? 1 : 0));
+        const bh = (freq[i] / 255) * (h - 8);
+        const ph = this.peakBins[i] * (h - 8);
+        ctx.fillStyle = "#3ecf8e";
+        ctx.fillRect(x0, h - bh, bw, bh);
+        ctx.fillStyle = "#e8a54b";
+        ctx.fillRect(x0, h - ph - 2, bw, 2);
+      }
     }
   }
 
-  paintSpectrogramColumn(img, x, w, h, col, rowPos, binCount) {
+  /** Zoomed-in FFT: interpolated area + line, peak-hold line, and labels on the strongest peaks. */
+  drawFftCurve(ctx, w, h, frame, minHz, maxHz) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const binHz = frame.sampleRate / frame.fftSize;
+    const cols = Math.max(2, Math.round(w / dpr));
+    this.curve = resampleSpectrum(frame.freq, binHz, minHz, maxHz, cols, this.curve?.length === cols ? this.curve : undefined);
+    this.peakCurve = resampleSpectrum(this.peakBins, binHz, minHz, maxHz, cols, this.peakCurve?.length === cols ? this.peakCurve : undefined);
+    const yOf = (v) => h - (v / 255) * (h - 8);
+    const xOf = (i) => ((i + 0.5) / cols) * w;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for (let i = 0; i < cols; i++) ctx.lineTo(xOf(i), yOf(this.curve[i]));
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(62, 207, 142, 0.35)";
+    ctx.fill();
+    ctx.beginPath();
+    for (let i = 0; i < cols; i++) ctx[i ? "lineTo" : "moveTo"](xOf(i), yOf(this.curve[i]));
+    ctx.strokeStyle = "#3ecf8e";
+    ctx.lineWidth = 2 * dpr;
+    ctx.lineJoin = "round";
+    ctx.stroke();
+    ctx.beginPath();
+    for (let i = 0; i < cols; i++) ctx[i ? "lineTo" : "moveTo"](xOf(i), yOf(this.peakCurve[i] * 255) - 1);
+    ctx.strokeStyle = "#e8a54b";
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.stroke();
+
+    const peaks = frame.freqFloat ? findSpectrumPeaks(frame.freqFloat, binHz, minHz, maxHz) : [];
+    this.lastPeaks = peaks;
+    ctx.font = `${11 * dpr}px "IBM Plex Mono", monospace`;
+    ctx.textBaseline = "bottom";
+    let prevRight = -Infinity;
+    let prevY = Infinity;
+    for (const p of peaks) {
+      const x = ((p.hz - minHz) / (maxHz - minHz)) * w;
+      const yCurve = yOf(this.curve[Math.max(0, Math.min(cols - 1, Math.floor((x / w) * cols)))]);
+      const label = `${p.hz.toFixed(1)} Hz`;
+      const tw = ctx.measureText(label).width;
+      const lx = clamp(x - tw / 2, 2 * dpr, w - tw - 2 * dpr);
+      let ly = Math.max(30 * dpr, yCurve - 8 * dpr);
+      if (lx < prevRight + 4 * dpr) ly = Math.min(ly, prevY - 14 * dpr);
+      ctx.fillStyle = "#f2f7f4";
+      ctx.beginPath();
+      ctx.moveTo(x, yCurve - 2 * dpr);
+      ctx.lineTo(x - 4 * dpr, yCurve - 8 * dpr);
+      ctx.lineTo(x + 4 * dpr, yCurve - 8 * dpr);
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = 3 * dpr;
+      ctx.strokeStyle = "rgba(14,22,19,0.9)";
+      ctx.strokeText(label, lx, ly - 2 * dpr);
+      ctx.fillText(label, lx, ly - 2 * dpr);
+      prevRight = lx + tw;
+      prevY = ly;
+    }
+    ctx.restore();
+  }
+
+  /** `entry` is a history column `{ data, binHz }` (or null for empty); `rowHz` maps each y to Hz. */
+  paintSpectrogramColumn(img, x, w, h, entry, rowHz) {
+    const col = entry?.data;
+    const binCount = col ? col.length : 0;
     for (let y = 0; y < h; y++) {
-      const pos = rowPos[y];
       let mag = 0;
+      const pos = col ? rowHz[y] / entry.binHz : -1;
       if (col && pos >= 0 && pos <= binCount - 1) {
         const i = Math.floor(pos);
         const t = pos - i;
@@ -439,25 +532,23 @@ export class VisualizerHost {
   }
 
   drawSpectrogram(ctx, w, h, frame, minHz, maxHz) {
-    const { sampleRate, fftSize, binCount } = frame;
-    const binHz = sampleRate / fftSize;
-    this.specHist.push(Uint8Array.from(frame.freq));
-    if (this.specHist.length > 4096) this.specHist.shift();
+    const binHz = frame.sampleRate / frame.fftSize;
+    this.specHist.push({ data: Uint8Array.from(frame.freq), binHz });
+    while (this.specHist.length > Math.max(w, 256)) this.specHist.shift();
 
-    const key = `${minHz.toFixed(4)}|${maxHz.toFixed(4)}|${w}|${h}|${binHz}`;
+    const key = `${minHz.toFixed(4)}|${maxHz.toFixed(4)}|${w}|${h}`;
     const rebuild = !this.spectrogram || this.spectrogram.width !== w || this.spectrogram.height !== h || key !== this.specKey;
     if (rebuild) {
       this.specKey = key;
       this.spectrogram = ctx.createImageData(w, h);
-      this.specRowPos = new Float32Array(h);
+      this.specRowHz = new Float32Array(h);
       for (let y = 0; y < h; y++) {
-        const hz = minHz + (1 - (y + 0.5) / h) * (maxHz - minHz);
-        this.specRowPos[y] = hz / binHz;
+        this.specRowHz[y] = minHz + (1 - (y + 0.5) / h) * (maxHz - minHz);
       }
       const hist = this.specHist;
       for (let x = 0; x < w; x++) {
         const hi = hist.length - w + x;
-        this.paintSpectrogramColumn(this.spectrogram, x, w, h, hi >= 0 ? hist[hi] : null, this.specRowPos, binCount);
+        this.paintSpectrogramColumn(this.spectrogram, x, w, h, hi >= 0 ? hist[hi] : null, this.specRowHz);
       }
     } else {
       const img = this.spectrogram;
@@ -465,37 +556,59 @@ export class VisualizerHost {
         const row = y * w * 4;
         img.data.copyWithin(row, row + 4, row + w * 4);
       }
-      this.paintSpectrogramColumn(img, w - 1, w, h, this.specHist[this.specHist.length - 1], this.specRowPos, binCount);
+      this.paintSpectrogramColumn(img, w - 1, w, h, this.specHist[this.specHist.length - 1], this.specRowHz);
     }
     ctx.putImageData(this.spectrogram, 0, 0);
   }
 
   drawWaterfall(ctx, w, h, frame, minHz, maxHz) {
-    const { sampleRate, fftSize, binCount } = frame;
-    const binHz = sampleRate / fftSize;
-    const rows = 64;
-    this.waterfallRows.unshift(Uint8Array.from(frame.freq));
+    const rows = WATERFALL_ROWS;
+    const binHz = frame.sampleRate / frame.fftSize;
+    const cols = w;
+    const key = `${minHz.toFixed(4)}|${maxHz.toFixed(4)}|${cols}`;
+    if (key !== this.waterfallKey) {
+      this.waterfallKey = key;
+      for (const row of this.waterfallRows) row.px = resampleSpectrum(row.data, row.binHz, minHz, maxHz, cols);
+    }
+    const data = Uint8Array.from(frame.freq);
+    this.waterfallRows.unshift({ data, binHz, px: resampleSpectrum(data, binHz, minHz, maxHz, cols) });
     if (this.waterfallRows.length > rows) this.waterfallRows.pop();
 
-    const span = maxHz - minHz;
-    const first = Math.max(0, Math.floor(minHz / binHz - 0.5));
-    const last = Math.min(binCount - 1, Math.ceil(maxHz / binHz + 0.5));
-    const rowH = h / rows;
-    for (let i = first; i <= last; i++) {
-      const x0 = Math.max(0, ((i - 0.5) * binHz - minHz) / span * w);
-      const x1 = Math.min(w, ((i + 0.5) * binHz - minHz) / span * w);
-      if (x1 <= x0) continue;
-      for (let r = 0; r < this.waterfallRows.length; r++) {
-        const shade = Math.floor((this.waterfallRows[r][i] / 255) * 220);
-        ctx.fillStyle = `rgb(${shade * 0.3}, ${shade}, ${shade * 0.55})`;
-        ctx.fillRect(x0, r * rowH, x1 - x0 + 0.5, rowH + 0.5);
+    if (!this.waterfallImg || this.waterfallImg.width !== cols) {
+      this.waterfallImg = new ImageData(cols, rows);
+      this.waterfallCanvas = document.createElement("canvas");
+      this.waterfallCanvas.width = cols;
+      this.waterfallCanvas.height = rows;
+    }
+    const px = this.waterfallImg.data;
+    px.fill(0);
+    for (let r = 0; r < this.waterfallRows.length; r++) {
+      const vals = this.waterfallRows[r].px;
+      for (let x = 0; x < cols; x++) {
+        const shade = (vals[x] / 255) * 220;
+        const o = (r * cols + x) * 4;
+        px[o] = shade * 0.3;
+        px[o + 1] = shade;
+        px[o + 2] = shade * 0.55;
+        px[o + 3] = 255;
       }
     }
+    this.waterfallCanvas.getContext("2d").putImageData(this.waterfallImg, 0, 0);
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this.waterfallCanvas, 0, 0, cols, rows, 0, 0, w, h);
+    ctx.restore();
   }
 
   drawCircular(ctx, w, h, frame, minHz, maxHz) {
-    const { i0, i1 } = binRange(frame.sampleRate, frame.fftSize, frame.binCount, minHz, maxHz);
-    const span = Math.max(1, i1 - i0);
+    const { i0, i1, binHz } = binRange(frame.sampleRate, frame.fftSize, frame.binCount, minHz, maxHz);
+    let span = Math.max(1, i1 - i0);
+    let mags = frame.freq.subarray(i0, i0 + span);
+    if (span < 360) {
+      span = 360;
+      mags = resampleSpectrum(frame.freq, binHz, minHz, maxHz, span, this.ringPts?.length === span ? this.ringPts : undefined);
+      this.ringPts = mags;
+    }
     const cx = w / 2;
     const cy = h / 2;
     const radius = Math.min(w, h) * 0.28;
@@ -507,7 +620,7 @@ export class VisualizerHost {
 
     ctx.beginPath();
     for (let i = 0; i < span; i++) {
-      const mag = frame.freq[i0 + i] / 255;
+      const mag = mags[i] / 255;
       const ang = (i / span) * Math.PI * 2 - Math.PI / 2;
       const r = radius + mag * radius * 1.1;
       const x = cx + Math.cos(ang) * r;

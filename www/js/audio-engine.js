@@ -28,6 +28,9 @@ export class AudioEngine {
     this.timeFloat = null;
     this.freqData = null;
     this.freqFloat = null;
+    this.specAnalyser = null;
+    this.specFrame = null;
+    this.specPulledAt = 0;
     this.genNodes = [];
     this.onDeviceChange = null;
   }
@@ -140,6 +143,16 @@ export class AudioEngine {
     this.source.connect(this.analyser);
     // Do not connect mic to destination (feedback)
 
+    // GRAPH-only analyser whose fftSize follows the visible range (see pullSpectrum); the main
+    // analyser stays at 4096 for DATA, TOYS, detectors and the scope.
+    this.specAnalyser = this.ctx.createAnalyser();
+    this.specAnalyser.fftSize = this.analyser.fftSize;
+    this.specAnalyser.smoothingTimeConstant = this.analyser.smoothingTimeConstant;
+    this.specAnalyser.minDecibels = this.analyser.minDecibels;
+    this.specAnalyser.maxDecibels = this.analyser.maxDecibels;
+    this.source.connect(this.specAnalyser);
+    this.specFrame = null;
+
     const bins = this.analyser.frequencyBinCount;
     this.timeData = new Uint8Array(this.analyser.fftSize);
     this.timeFloat = new Float32Array(this.analyser.fftSize);
@@ -165,6 +178,11 @@ export class AudioEngine {
     if (this.analyser) {
       try { this.analyser.disconnect(); } catch { /* */ }
       this.analyser = null;
+    }
+    if (this.specAnalyser) {
+      try { this.specAnalyser.disconnect(); } catch { /* */ }
+      this.specAnalyser = null;
+      this.specFrame = null;
     }
     if (this.stream) {
       this.stream.getTracks().forEach((t) => t.stop());
@@ -195,6 +213,39 @@ export class AudioEngine {
       fftSize: this.analyser.fftSize,
       binCount: this.analyser.frequencyBinCount,
     };
+  }
+
+  /**
+   * `frame` with its spectrum replaced by one computed at `fftSize` (time-domain fields untouched).
+   * Returns `frame` itself when the main analyser already has that resolution. FFTs of 16384+
+   * points are recomputed at most every 30 ms: the window advances only a few percent per frame.
+   */
+  pullSpectrum(frame, fftSize) {
+    const a = this.specAnalyser;
+    if (!frame || !a || fftSize <= frame.fftSize) {
+      this.specFrame = null;
+      return frame;
+    }
+    const now = performance.now();
+    const resized = a.fftSize !== fftSize;
+    if (resized) {
+      a.fftSize = fftSize;
+      this.specFreq = new Uint8Array(a.frequencyBinCount);
+      this.specFreqFloat = new Float32Array(a.frequencyBinCount);
+    }
+    if (resized || !this.specFrame || fftSize < 16384 || now - this.specPulledAt >= 30) {
+      a.getByteFrequencyData(this.specFreq);
+      a.getFloatFrequencyData(this.specFreqFloat);
+      this.specPulledAt = now;
+    }
+    this.specFrame = {
+      ...frame,
+      freq: this.specFreq,
+      freqFloat: this.specFreqFloat,
+      fftSize,
+      binCount: a.frequencyBinCount,
+    };
+    return this.specFrame;
   }
 
   trackSettings() {
