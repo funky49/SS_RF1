@@ -483,3 +483,130 @@ label { color: var(--muted); }
   background: var(--bg2);
   border: 1px solid var(--line);
 }
+
+/* GRAPH → Oscilloscope controls */
+.scope-controls {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.5rem 0.6rem 0.6rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.75rem;
+  touch-action: manipulation;
+  flex: none;
+}
+
+.scope-controls[hidden] { display: none; }
+
+.graph-stage.scope-on > .band-legend,
+.graph-stage.scope-on > .band-zoom { display: none; }
+
+.graph-stage.fullscreen.scope-on #viz-canvas {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+}
+
+.scope-row {
+  display: grid;
+  gap: 0.4rem;
+  align-items: end;
+}
+
+.scope-row-main { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.scope-row-persist { grid-template-columns: 1fr auto; column-gap: 0.9rem; }
+
+.scope-field {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.scope-controls select,
+.scope-controls .btn {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.8rem;
+}
+
+.scope-freeze[aria-pressed="true"] {
+  background: var(--warn);
+  border-color: var(--warn);
+  color: var(--bg0);
+}
+
+.scope-slider {
+  display: grid;
+  grid-template-columns: 3.4rem 1fr 2.8rem;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.scope-slider input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  height: 2rem;
+  margin: 0;
+  accent-color: var(--accent);
+  touch-action: pan-y;
+}
+
+.scope-out {
+  min-width: 2.6rem;
+  color: var(--text);
+  font-size: 0.7rem;
+  text-align: right;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.scope-check {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.scope-check input {
+  width: 1.4rem;
+  height: 1.4rem;
+  margin: 0;
+  accent-color: var(--warn);
+}
+
+.scope-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.9rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.scope-read-val { color: var(--accent); font-weight: 600; }
+
+.scope-clamp {
+  margin: 0;
+  color: var(--warn);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.scope-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.65rem;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+
+.graph-stage.scope-on #viz-canvas { height: min(44vh, 440px); }

@@ -13,6 +13,7 @@ import {
 } from "./metrics.js";
 import { VisualizerHost, drawStripWave, renderBandLegend } from "./visualizers.js";
 import { ToysController } from "./toys.js";
+import { initScopeUI } from "./scope-ui.js";
 
 const engine = new AudioEngine();
 const settings = loadSettings();
@@ -233,6 +234,13 @@ setTab(settings.tab || "data");
 toys.selectTool(settings.tool || "info");
 document.querySelectorAll(".toy-btn").forEach((btn) => {
   btn.addEventListener("click", () => saveSettings({ tool: btn.dataset.tool }));
+});
+
+initScopeUI({
+  host: viz,
+  vizSelect: els.vizSelect,
+  stage: els.graphStage,
+  canvas: document.getElementById("viz-canvas"),
 });
 
 showApp();

@@ -8,8 +8,17 @@ Repo: [funky49/SS_RF1](https://github.com/funky49/SS_RF1) (Sound Seer refactor).
 
 - **Top strip** — live mic waveform  
 - **DATA** — dB, RMS, peak (+ hold), pitch/note, ZCR, spectral centroid, loudness with real-world comparisons, mic disclaimer, multi-mic best-input picker  
-- **GRAPH** — waveform, FFT bars, spectrogram, circular/radial, waterfall; zoom bands; frequency band color markers; fullscreen + portrait  
+- **GRAPH** — waveform, oscilloscope, FFT bars, spectrogram, circular/radial, waterfall; zoom bands; frequency band color markers; fullscreen + portrait  
 - **TOYS** — mic/device info, sound toys (sweep, Quindar, bird, noise+HPF), flash-to-bang, room size, RPM, leak/hiss, loudness dose, periodicity, pitch/note, BPM (auto + tap)
+
+### Oscilloscope (GRAPH → View → Oscilloscope)
+
+Time-domain scope with a 10 × 8 graticule, green phosphor trace with adjustable persistence, and a control strip under the canvas (works in fullscreen and portrait; no canvas gestures are registered).
+
+- **Trigger** — rising edge at an adjustable level with hysteresis (0.1 div). Modes: *Auto* (free-runs when nothing triggers), *Normal* (holds the last triggered trace, shows WAIT), *Off*. The amber dashed line and arrow mark the level; the small triangle marks the trigger point (1 div from the left).
+- **Time/div** — 0.2 to 10 ms/div, computed from the real sample rate. The analyser buffer is 4096 samples, so spans longer than the buffer minus a trigger search margin (≈8 ms/div at 44.1 kHz) are clamped and the UI says so.
+- **Amplitude** — normalized units/div (full scale = ±1, 0.25 u/div at x1) with x1–x16 gain; uncalibrated, not volts. Uses `getFloatTimeDomainData` when available for low-level resolution (byte path still used elsewhere).
+- **Readouts** — frequency from the trigger period, Vpp and RMS (normalized) of the pulled buffer. Freeze/Run holds a trace; Peak hold draws a faint max/min envelope (cleared by *Reset hold*).
 
 ## Serve for Android Chrome testing
 
@@ -50,6 +59,7 @@ npx cap open android
 | Script | Purpose |
 |--------|---------|
 | `npm run serve` | Static server for `www` on port 4173 |
+| `npm test` | Unit tests (`node --test tests/*.test.js`) |
 | `npm run cap:sync` | Copy web assets into Android project |
 | `npm run cap:open:android` | Open Android Studio |
 

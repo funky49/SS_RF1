@@ -1,4 +1,5 @@
 import { BANDS, parseZoom } from "./metrics.js";
+import { OscilloscopeView } from "./scope.js";
 
 function resizeCanvas(canvas) {
   const rect = canvas.getBoundingClientRect();
@@ -59,6 +60,7 @@ export class VisualizerHost {
     this.waterfall = null;
     this.peakBins = null;
     this.peakDecay = 0.92;
+    this.scope = new OscilloscopeView();
   }
 
   setMode(mode) {
@@ -73,6 +75,7 @@ export class VisualizerHost {
 
   resetPeak() {
     this.peakBins = null;
+    this.scope.resetPeak();
   }
 
   draw(frame) {
@@ -86,6 +89,11 @@ export class VisualizerHost {
       ctx.fillStyle = "#8aa396";
       ctx.font = `${12 * (window.devicePixelRatio || 1)}px "IBM Plex Mono", monospace`;
       ctx.fillText("Enable mic to visualize", 16, h / 2);
+      return;
+    }
+
+    if (this.mode === "oscilloscope") {
+      this.drawOscilloscope(ctx, w, h, frame);
       return;
     }
 
@@ -144,6 +152,10 @@ export class VisualizerHost {
     ctx.lineTo(w, h - yPeak);
     ctx.stroke();
     ctx.setLineDash([]);
+  }
+
+  drawOscilloscope(ctx, w, h, frame) {
+    this.scope.draw(ctx, w, h, frame);
   }
 
   drawFft(ctx, w, h, frame, minHz, maxHz) {

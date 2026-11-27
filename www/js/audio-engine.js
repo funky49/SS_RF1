@@ -12,6 +12,7 @@ export class AudioEngine {
     this.deviceId = "";
     this.devices = [];
     this.timeData = null;
+    this.timeFloat = null;
     this.freqData = null;
     this.freqFloat = null;
     this.genNodes = [];
@@ -126,6 +127,7 @@ export class AudioEngine {
 
     const bins = this.analyser.frequencyBinCount;
     this.timeData = new Uint8Array(this.analyser.fftSize);
+    this.timeFloat = new Float32Array(this.analyser.fftSize);
     this.freqData = new Uint8Array(bins);
     this.freqFloat = new Float32Array(bins);
 
@@ -166,10 +168,12 @@ export class AudioEngine {
   pull() {
     if (!this.analyser) return null;
     this.analyser.getByteTimeDomainData(this.timeData);
+    if (this.analyser.getFloatTimeDomainData) this.analyser.getFloatTimeDomainData(this.timeFloat);
     this.analyser.getByteFrequencyData(this.freqData);
     this.analyser.getFloatFrequencyData(this.freqFloat);
     return {
       time: this.timeData,
+      timeFloat: this.analyser.getFloatTimeDomainData ? this.timeFloat : null,
       freq: this.freqData,
       freqFloat: this.freqFloat,
       sampleRate: this.sampleRate,

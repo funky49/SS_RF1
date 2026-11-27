@@ -6,6 +6,7 @@
   "scripts": {
     "serve": "npx --yes serve www -l 4173",
     "start": "npm run serve",
+    "test": "node --test tests/*.test.js",
     "cap:sync": "npx cap sync android",
     "cap:add:android": "npx cap add android",
     "cap:open:android": "npx cap open android"
