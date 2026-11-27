@@ -8,7 +8,7 @@ Repo: [funky49/SS_RF1](https://github.com/funky49/SS_RF1) (Sound Seer refactor).
 
 - **Top strip** — live mic waveform  
 - **DATA** — dB, RMS, peak (+ hold), pitch/note, ZCR, spectral centroid, loudness with real-world comparisons, mic disclaimer, multi-mic best-input picker  
-- **GRAPH** — waveform, FFT bars, spectrogram, circular/radial, waterfall; zoom presets; frequency band color markers; frequency-axis zoom/pan and band zoom buttons; fullscreen + portrait  
+- **GRAPH** — waveform, oscilloscope, FFT bars, spectrogram, circular/radial, waterfall; zoom presets; frequency band color markers; frequency-axis zoom/pan and band zoom buttons; fullscreen + portrait  
 - **TOYS** — Settings (units: Metric / American), mic/device info, sound toys (sweep, Quindar, bird, noise+HPF), flash-to-bang, room size, RPM, leak/hiss, loudness dose, periodicity, pitch/note, BPM (auto + tap), **mosquito detector**, **approaching-aircraft detector**
 
 ### Mosquito + aircraft detectors (TOYS)
@@ -25,6 +25,15 @@ In FFT bars, spectrogram, waterfall and radial views you can zoom into the frequ
 - **Pinch** with two fingers to zoom, **drag** to pan; on desktop use the **mouse wheel** to zoom and **drag** to pan (horizontal wheel/shift+wheel pans). **Double-tap / double-click** resets the view.
 - **Band buttons** under the graph (All, Sub-bass 20–60 Hz, Bass, Low mid, Mid, High mid, Presence, Brilliance) animate the view to that band; the strip scrolls horizontally on small screens. Manual pinch/pan clears the highlighted button.
 - The view is limited to 20 Hz up to the top of the selected **Zoom** preset. Picking a preset (20–80, 80–3000, 20–20k, 20–64k) resets the view to that range. Zoom state is not persisted.
+
+### Oscilloscope (GRAPH → View → Oscilloscope)
+
+Time-domain scope with a 10 × 8 graticule, green phosphor trace with adjustable persistence, and a control strip under the canvas (works in fullscreen and portrait; no canvas gestures are registered).
+
+- **Trigger** — rising edge at an adjustable level with hysteresis (0.1 div). Modes: *Auto* (free-runs when nothing triggers), *Normal* (holds the last triggered trace, shows WAIT), *Off*. The amber dashed line and arrow mark the level; the small triangle marks the trigger point (1 div from the left).
+- **Time/div** — 0.2 to 10 ms/div, computed from the real sample rate. The analyser buffer is 4096 samples, so spans longer than the buffer minus a trigger search margin (≈8 ms/div at 44.1 kHz) are clamped and the UI says so.
+- **Amplitude** — normalized units/div (full scale = ±1, 0.25 u/div at x1) with x1–x16 gain; uncalibrated, not volts. Uses `getFloatTimeDomainData` when available for low-level resolution (byte path still used elsewhere).
+- **Readouts** — frequency from the trigger period, Vpp and RMS (normalized) of the pulled buffer. Freeze/Run holds a trace; Peak hold draws a faint max/min envelope (cleared by *Reset hold*).
 
 ## Try it on your phone (easiest)
 

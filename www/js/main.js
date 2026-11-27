@@ -16,6 +16,7 @@ import { VisualizerHost, drawStripWave, renderBandButtons } from "./visualizers.
 import { attachSpectrumGestures } from "./spectrum-zoom.js";
 import { ToysController } from "./toys.js";
 import { bindUnitsUI } from "./units-ui.js";
+import { initScopeUI } from "./scope-ui.js";
 
 const engine = new AudioEngine();
 const settings = loadSettings();
@@ -276,6 +277,13 @@ document.querySelectorAll(".toy-btn").forEach((btn) => {
 });
 
 bindUnitsUI();
+initScopeUI({
+  host: viz,
+  vizSelect: els.vizSelect,
+  stage: els.graphStage,
+  canvas: document.getElementById("viz-canvas"),
+});
+
 showApp();
 loop();
 

@@ -1,4 +1,5 @@
 import { BANDS, parseZoom } from "./metrics.js";
+import { OscilloscopeView } from "./scope.js";
 
 function resizeCanvas(canvas) {
   const rect = canvas.getBoundingClientRect();
@@ -182,6 +183,7 @@ export class VisualizerHost {
     this.peakBins = null;
     this.peakDecay = 0.92;
     canvas.dataset.mode = this.mode;
+    this.scope = new OscilloscopeView();
   }
 
   setMode(mode) {
@@ -210,6 +212,7 @@ export class VisualizerHost {
 
   resetPeak() {
     this.peakBins = null;
+    this.scope.resetPeak();
   }
 
   bandRange(band) {
@@ -313,6 +316,11 @@ export class VisualizerHost {
       return;
     }
 
+    if (this.mode === "oscilloscope") {
+      this.drawOscilloscope(ctx, w, h, frame);
+      return;
+    }
+
     switch (this.mode) {
       case "waveform":
         this.drawWaveform(ctx, w, h, frame);
@@ -372,6 +380,10 @@ export class VisualizerHost {
     ctx.lineTo(w, h - yPeak);
     ctx.stroke();
     ctx.setLineDash([]);
+  }
+
+  drawOscilloscope(ctx, w, h, frame) {
+    this.scope.draw(ctx, w, h, frame);
   }
 
   drawFft(ctx, w, h, frame, minHz, maxHz) {
