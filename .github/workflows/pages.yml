@@ -1,0 +1,52 @@
+name: Deploy www to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "www/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # deploy-pages only works once Settings > Pages > Source is "GitHub Actions".
+      # Until then, skip with a notice instead of failing; the root index.html redirect keeps the legacy site usable.
+      - name: Check Pages source
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          build_type=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type 2>/dev/null || echo none)
+          echo "build_type=$build_type" >> "$GITHUB_OUTPUT"
+          if [ "$build_type" != "workflow" ]; then
+            echo "::notice title=Pages source is '$build_type'::Set Settings > Pages > Build and deployment > Source to 'GitHub Actions', then re-run this workflow."
+          fi
+
+      - if: steps.source.outputs.build_type == 'workflow'
+        uses: actions/configure-pages@v5
+
+      - if: steps.source.outputs.build_type == 'workflow'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: www
+
+      - if: steps.source.outputs.build_type == 'workflow'
+        id: deployment
+        uses: actions/deploy-pages@v4

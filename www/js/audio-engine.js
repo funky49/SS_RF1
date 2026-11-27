@@ -2,6 +2,19 @@
  * Web Audio engine: getUserMedia → AnalyserNode, multi-mic pick, generators.
  */
 
+/** Explains why the mic cannot be opened here, or returns "" when getUserMedia is usable. */
+export function micUnavailableReason() {
+  if (!window.isSecureContext) {
+    return `Mic needs HTTPS or localhost. This page is ${location.protocol}//${location.host}, ` +
+      "so the browser hides the microphone. Open the HTTPS (GitHub Pages) link, or use " +
+      "adb reverse and http://localhost on the phone.";
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return "This browser does not support microphone capture (getUserMedia).";
+  }
+  return "";
+}
+
 export class AudioEngine {
   constructor() {
     this.ctx = null;
@@ -62,6 +75,8 @@ export class AudioEngine {
   }
 
   async start(preferredDeviceId = "") {
+    const reason = micUnavailableReason();
+    if (reason) throw new Error(reason);
     await this.ensureContext();
     await this.stopStreamOnly();
 
