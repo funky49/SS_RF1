@@ -1,0 +1,40 @@
+name: Deploy preview to GitHub Pages
+
+on:
+  push:
+    branches: ["preview/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-preview
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stamp build
+        run: |
+          printf '{"sha":"%s","branch":"%s","date":"%s"}\n' \
+            "$(git rev-parse --short HEAD)" "${GITHUB_REF_NAME}" "$(date -u +'%Y-%m-%d %H:%M UTC')" \
+            > www/build-info.json
+          cat www/build-info.json
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: www
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

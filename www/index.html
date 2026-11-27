@@ -21,6 +21,8 @@
 
   <div id="boot-error" class="boot-error hidden" role="alert"></div>
 
+  <div id="build-stamp" class="build-stamp" aria-label="Build version"></div>
+
   <div id="app" class="app hidden">
     <header class="topbar">
       <div class="brand">
@@ -259,6 +261,15 @@
         el.classList.remove("hidden");
       }, 1500);
     });
+  </script>
+  <script>
+    (function () {
+      var el = document.getElementById("build-stamp");
+      fetch("build-info.json", { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (b) { el.textContent = "build " + b.sha + " · " + b.branch + " · " + b.date; })
+        .catch(function () { el.textContent = "build: local dev"; });
+    })();
   </script>
 </body>
 </html>
