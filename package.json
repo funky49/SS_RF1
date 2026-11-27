@@ -11,7 +11,8 @@
     "serve": "node scripts/serve.mjs",
     "cap:sync": "npx cap sync android",
     "cap:add:android": "npx cap add android",
-    "cap:open:android": "npx cap open android"
+    "cap:open:android": "npx cap open android",
+    "test": "node --test tests/detectors.test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",

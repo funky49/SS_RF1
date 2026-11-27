@@ -542,3 +542,98 @@ label { color: var(--muted); }
   background: var(--bg2);
   border: 1px solid var(--line);
 }
+
+/* TOYS: mosquito + aircraft detectors */
+.toy-panel .disclaimer { margin: 0 0 0.6rem; }
+
+.det-meter {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+
+.det-meter .seg {
+  padding: 0.35rem 0.4rem;
+  text-align: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--bg2);
+  border: 1px solid var(--line);
+}
+
+.det-meter .seg.on { color: var(--bg0); background: var(--muted); border-color: var(--muted); }
+#mq-seg-possible.on { background: var(--warn); border-color: var(--warn); }
+#mq-seg-likely.on { background: var(--danger); border-color: var(--danger); }
+
+.det-bar {
+  height: 8px;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.det-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-dim), var(--warn), var(--danger));
+  transition: width 0.15s linear;
+}
+
+.det-grid { margin-top: 0.7rem; }
+
+.det-canvas {
+  display: block;
+  width: 100%;
+  margin-top: 0.7rem;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+}
+
+.det-axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.68rem;
+  margin-top: 0.15rem;
+}
+
+.det-opts label { display: inline-flex; align-items: center; gap: 0.4rem; }
+.det-sub { margin: 0.5rem 0 0.3rem; font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+
+.det-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 9rem;
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: var(--bg1);
+}
+
+.det-log li {
+  padding: 0.35rem 0.55rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+}
+
+.det-log li:last-child { border-bottom: none; }
+.det-log li.empty { color: var(--muted); }
+
+.det-trend { display: flex; align-items: center; gap: 0.7rem; margin-top: 0.6rem; flex-wrap: wrap; }
+.det-trend .hint { margin: 0; }
+
+.trend-badge {
+  padding: 0.3rem 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--line);
+  background: var(--bg2);
+  color: var(--muted);
+}
+
+.trend-badge.approaching { color: var(--bg0); background: var(--danger); border-color: var(--danger); }
+.trend-badge.receding { color: var(--bg0); background: var(--accent); border-color: var(--accent); }

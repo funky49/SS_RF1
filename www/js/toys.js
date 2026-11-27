@@ -6,6 +6,7 @@ import {
   DoseMeter,
   PeakHold,
 } from "./metrics.js";
+import { DetectorsUI } from "./detector-ui.js";
 
 function speedOfSound(tempC) {
   return 331.3 + 0.606 * tempC;
@@ -22,6 +23,7 @@ export class ToysController {
     this.roomArmed = false;
     this.roomBaseline = 0;
     this.roomPeakAt = 0;
+    this.detectors = new DetectorsUI(engine);
     this._bind();
   }
 
@@ -93,6 +95,7 @@ export class ToysController {
       p.classList.toggle("active", on);
       p.hidden = !on;
     });
+    this.detectors?.onToolSelected(id);
     return id;
   }
 
@@ -133,6 +136,7 @@ export class ToysController {
   }
 
   tick(frame) {
+    this.detectors.tick(frame);
     if (!frame) return;
 
     // Flash auto-thunder: sudden level jump after flash
