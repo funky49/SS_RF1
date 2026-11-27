@@ -9,7 +9,14 @@ Repo: [funky49/SS_RF1](https://github.com/funky49/SS_RF1) (Sound Seer refactor).
 - **Top strip** — live mic waveform  
 - **DATA** — dB, RMS, peak (+ hold), pitch/note, ZCR, spectral centroid, loudness with real-world comparisons, mic disclaimer, multi-mic best-input picker  
 - **GRAPH** — waveform, FFT bars, spectrogram, circular/radial, waterfall; zoom bands; frequency band color markers; fullscreen + portrait  
-- **TOYS** — mic/device info, sound toys (sweep, Quindar, bird, noise+HPF), flash-to-bang, room size, RPM, leak/hiss, loudness dose, periodicity, pitch/note, BPM (auto + tap)
+- **TOYS** — mic/device info, sound toys (sweep, Quindar, bird, noise+HPF), flash-to-bang, room size, RPM, leak/hiss, loudness dose, periodicity, pitch/note, BPM (auto + tap), **mosquito detector**, **approaching-aircraft detector**
+
+### Mosquito + aircraft detectors (TOYS)
+
+Both are *sound-pattern spotters* built on the shared mic/analyser (no extra mic stream); DSP lives in `www/js/detectors.js`, UI glue in `www/js/detector-ui.js`. They only run while their panel is open and the screen is on.
+
+- **Mosquito detector** — looks for a narrow tone at ~300–900 Hz that holds within ±25 Hz for ~1 s, sits ≥12 dB above the local noise floor, and has 2x/3x harmonics. Shows none / possible / likely, wingbeat Hz, a 300–900 Hz spectrum zoom, a detection log, and optional vibrate/beep. Works only when the mosquito is very close to the mic in a quiet room; whistles, beeps, fans and mains hum can false-trigger it.
+- **Aircraft detector** — scores helicopter (10–40 Hz rotor modulation), drone (100–400 Hz harmonic series, pitch wobble, high whine), propeller airplane (low tonal series) and jet/airplane (low-frequency broadband rumble). Approaching / receding comes from the smoothed level trend over ~10 s, plus Doppler pitch drift for tonal sounds (a weak cue). Wind, traffic, HVAC and fans cause false positives; confidence is a heuristic score, not a probability, and this is not reliable identification.
 
 ## Serve for Android Chrome testing
 
@@ -49,6 +56,7 @@ npx cap open android
 
 | Script | Purpose |
 |--------|---------|
+| `npm test` | Unit tests for the detector DSP (synthetic signals, Node 18+) |
 | `npm run serve` | Static server for `www` on port 4173 |
 | `npm run cap:sync` | Copy web assets into Android project |
 | `npm run cap:open:android` | Open Android Studio |

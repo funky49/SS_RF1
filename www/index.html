@@ -139,6 +139,8 @@
             <button class="toy-btn" data-tool="periodicity" type="button">Periodicity</button>
             <button class="toy-btn" data-tool="pitch" type="button">Pitch / note</button>
             <button class="toy-btn" data-tool="bpm" type="button">BPM finder</button>
+            <button class="toy-btn" data-tool="mosquito" type="button">Mosquito detector</button>
+            <button class="toy-btn" data-tool="aircraft" type="button">Aircraft detector</button>
           </aside>
 
           <div class="toy-panels">
@@ -231,6 +233,73 @@
                 <button id="bpm-reset" class="btn btn-ghost" type="button">Reset taps</button>
               </div>
               <p id="bpm-result" class="result">Auto: — · Tap: —</p>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="mosquito" hidden>
+              <h3>Mosquito detector</h3>
+              <p class="disclaimer">
+                Readings depend on this device’s microphone and hardware. Not calibrated; for orientation only.
+              </p>
+              <p class="hint">
+                Listens for a steady, narrow tone at ~300–900 Hz (wingbeat) that holds for about a second, stands well above
+                the room noise, and has 2x / 3x harmonics. <strong>Honest limits:</strong> it only works when the mosquito is
+                very close to the mic and the room is quiet. It will not detect a distant mosquito, and whistles, beeps,
+                fans and electronics can trigger it.
+              </p>
+              <div class="det-meter" aria-label="Mosquito confidence">
+                <span id="mq-seg-none" class="seg on">none</span>
+                <span id="mq-seg-possible" class="seg">possible</span>
+                <span id="mq-seg-likely" class="seg">likely</span>
+              </div>
+              <div class="det-bar"><div id="mq-bar" class="det-bar-fill"></div></div>
+              <p id="mq-result" class="result big">—</p>
+              <div class="metrics-grid det-grid">
+                <div class="metric"><span class="metric-label">Wingbeat</span><span id="mq-hz" class="metric-value">— Hz</span></div>
+                <div class="metric"><span class="metric-label">Above noise</span><span id="mq-snr" class="metric-value">— dB</span></div>
+                <div class="metric"><span class="metric-label">Stability (1 s)</span><span id="mq-stab" class="metric-value">—</span></div>
+                <div class="metric"><span class="metric-label">Harmonics</span><span id="mq-harm" class="metric-value">—</span></div>
+              </div>
+              <canvas id="mq-canvas" class="det-canvas" width="560" height="150" aria-label="Spectrum zoom 300 to 900 Hz"></canvas>
+              <div class="det-axis"><span>300 Hz</span><span>600 Hz</span><span>900 Hz</span></div>
+              <div class="btn-row det-opts">
+                <label><input id="mq-vibrate" type="checkbox" /> Vibrate on “likely”</label>
+                <label><input id="mq-beep" type="checkbox" /> Beep on “likely”</label>
+              </div>
+              <p id="mq-note" class="hint"></p>
+              <h4 class="det-sub">Detections</h4>
+              <ol id="mq-log" class="det-log"><li class="empty">No detections yet.</li></ol>
+              <div class="btn-row"><button id="mq-clear" class="btn btn-ghost" type="button">Clear log</button></div>
+            </div>
+
+            <div class="toy-panel" data-tool-panel="aircraft" hidden>
+              <h3>Approaching aircraft detector</h3>
+              <p class="disclaimer">
+                Readings depend on this device’s microphone and hardware. Not calibrated; for orientation only.
+              </p>
+              <p class="hint">
+                <strong>Sound-pattern spotting, not reliable identification.</strong> Wind, traffic, HVAC and fans cause
+                false positives, and range is limited to what the phone mic can hear. Helicopter = 10–40 Hz rotor “thump”;
+                drone = 100–400 Hz harmonic series that wobbles; airplane = broadband rumble (prop planes add a tonal
+                blade-pass). Approaching / receding comes from the level trend over several seconds (plus Doppler pitch
+                drift for tonal sounds, a weak cue).
+              </p>
+              <p id="ac-result" class="result big">—</p>
+              <p id="ac-conf" class="hint">Listening…</p>
+              <div class="det-bar"><div id="ac-bar" class="det-bar-fill"></div></div>
+              <div class="det-trend">
+                <span id="ac-trend" class="trend-badge steady">steady</span>
+                <span id="ac-trend-detail" class="hint">—</span>
+              </div>
+              <canvas id="ac-canvas" class="det-canvas" width="560" height="110" aria-label="Level over time"></canvas>
+              <div class="det-axis"><span>−20 s</span><span>level (relative dB)</span><span>now</span></div>
+              <div class="metrics-grid det-grid">
+                <div class="metric"><span class="metric-label">Dominant freq</span><span id="ac-dom" class="metric-value">— Hz</span></div>
+                <div class="metric"><span class="metric-label">Modulation</span><span id="ac-mod" class="metric-value">—</span></div>
+                <div class="metric"><span class="metric-label">Harmonic f0</span><span id="ac-f0" class="metric-value">—</span></div>
+                <div class="metric"><span class="metric-label">Level</span><span id="ac-level" class="metric-value">— dB</span></div>
+                <div class="metric"><span class="metric-label">Level trend</span><span id="ac-slope" class="metric-value">—</span></div>
+                <div class="metric"><span class="metric-label">Pitch trend</span><span id="ac-pslope" class="metric-value">—</span></div>
+              </div>
             </div>
           </div>
         </div>

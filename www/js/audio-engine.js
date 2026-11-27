@@ -14,6 +14,7 @@ export class AudioEngine {
     this.timeData = null;
     this.freqData = null;
     this.freqFloat = null;
+    this.timeFloat = null;
     this.genNodes = [];
     this.onDeviceChange = null;
   }
@@ -128,6 +129,7 @@ export class AudioEngine {
     this.timeData = new Uint8Array(this.analyser.fftSize);
     this.freqData = new Uint8Array(bins);
     this.freqFloat = new Float32Array(bins);
+    this.timeFloat = new Float32Array(this.analyser.fftSize);
 
     if (typeof this.onDeviceChange === "function") {
       this.onDeviceChange(this.devices, this.deviceId);
@@ -168,8 +170,10 @@ export class AudioEngine {
     this.analyser.getByteTimeDomainData(this.timeData);
     this.analyser.getByteFrequencyData(this.freqData);
     this.analyser.getFloatFrequencyData(this.freqFloat);
+    this.analyser.getFloatTimeDomainData(this.timeFloat);
     return {
       time: this.timeData,
+      timeFloat: this.timeFloat,
       freq: this.freqData,
       freqFloat: this.freqFloat,
       sampleRate: this.sampleRate,
