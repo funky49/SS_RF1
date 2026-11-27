@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "description": "Sound Seer — audio tricorder",
   "private": true,
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "serve": "npx --yes serve www -l 4173",
-    "start": "npm run serve",
+    "start": "node scripts/serve.mjs",
+    "serve": "node scripts/serve.mjs",
     "cap:sync": "npx cap sync android",
     "cap:add:android": "npx cap add android",
     "cap:open:android": "npx cap open android"
