@@ -8,8 +8,16 @@ Repo: [funky49/SS_RF1](https://github.com/funky49/SS_RF1) (Sound Seer refactor).
 
 - **Top strip** — live mic waveform  
 - **DATA** — dB, RMS, peak (+ hold), pitch/note, ZCR, spectral centroid, loudness with real-world comparisons, mic disclaimer, multi-mic best-input picker  
-- **GRAPH** — waveform, FFT bars, spectrogram, circular/radial, waterfall; zoom bands; frequency band color markers; fullscreen + portrait  
+- **GRAPH** — waveform, FFT bars, spectrogram, circular/radial, waterfall; zoom presets; frequency band color markers; frequency-axis zoom/pan and band zoom buttons; fullscreen + portrait  
 - **TOYS** — mic/device info, sound toys (sweep, Quindar, bird, noise+HPF), flash-to-bang, room size, RPM, leak/hiss, loudness dose, periodicity, pitch/note, BPM (auto + tap)
+
+### Zooming the spectrum (GRAPH tab)
+
+In FFT bars, spectrogram, waterfall and radial views you can zoom into the frequency axis (spectrogram: vertical axis):
+
+- **Pinch** with two fingers to zoom, **drag** to pan; on desktop use the **mouse wheel** to zoom and **drag** to pan (horizontal wheel/shift+wheel pans). **Double-tap / double-click** resets the view.
+- **Band buttons** under the graph (All, Sub-bass 20–60 Hz, Bass, Low mid, Mid, High mid, Presence, Brilliance) animate the view to that band; the strip scrolls horizontally on small screens. Manual pinch/pan clears the highlighted button.
+- The view is limited to 20 Hz up to the top of the selected **Zoom** preset. Picking a preset (20–80, 80–3000, 20–20k, 20–64k) resets the view to that range. Zoom state is not persisted.
 
 ## Serve for Android Chrome testing
 
