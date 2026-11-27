@@ -10,8 +10,10 @@ import {
   relativeDb,
   compareLoudness,
   PeakHold,
+  BANDS,
 } from "./metrics.js";
-import { VisualizerHost, drawStripWave, renderBandLegend } from "./visualizers.js";
+import { VisualizerHost, drawStripWave, renderBandButtons } from "./visualizers.js";
+import { attachSpectrumGestures } from "./spectrum-zoom.js";
 import { ToysController } from "./toys.js";
 
 const engine = new AudioEngine();
@@ -29,6 +31,7 @@ const els = {
   refreshMics: document.getElementById("btn-refresh-mics"),
   strip: document.getElementById("strip-wave"),
   graphStage: document.getElementById("graph-stage"),
+  vizCanvas: document.getElementById("viz-canvas"),
   vizSelect: document.getElementById("viz-select"),
   zoomSelect: document.getElementById("zoom-select"),
   fullscreen: document.getElementById("btn-fullscreen"),
@@ -141,14 +144,39 @@ els.vizSelect.value = settings.viz;
 els.zoomSelect.value = settings.zoom;
 viz.setMode(settings.viz);
 viz.setZoom(settings.zoom);
-renderBandLegend(document.getElementById("band-legend"));
+
+const bandZoomEl = document.getElementById("band-zoom");
+renderBandButtons(bandZoomEl, (key) => viz.zoomToBand(key));
+attachSpectrumGestures(els.vizCanvas, viz);
+
+function syncBandButtons() {
+  bandZoomEl.querySelectorAll(".band-btn").forEach((btn) => {
+    const key = btn.dataset.band;
+    const band = BANDS.find((b) => b.name === key);
+    const on = key === viz.activeBand;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.disabled = band ? !viz.bandAvailable(band) : false;
+  });
+  const active = bandZoomEl.querySelector(".band-btn.active");
+  if (active) {
+    const { offsetLeft: l, offsetWidth: w } = active;
+    const view = bandZoomEl.clientWidth;
+    if (l < bandZoomEl.scrollLeft || l + w > bandZoomEl.scrollLeft + view) {
+      bandZoomEl.scrollTo({ left: l - (view - w) / 2, behavior: "smooth" });
+    }
+  }
+}
+viz.onActiveBandChange = syncBandButtons;
+syncBandButtons();
 
 els.vizSelect.addEventListener("change", () => {
   viz.setMode(els.vizSelect.value);
   saveSettings({ viz: els.vizSelect.value });
 });
 els.zoomSelect.addEventListener("change", () => {
-  viz.setZoom(els.zoomSelect.value);
+  viz.setZoom(els.zoomSelect.value, true);
+  syncBandButtons();
   saveSettings({ zoom: els.zoomSelect.value });
 });
 
