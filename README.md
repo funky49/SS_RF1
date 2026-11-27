@@ -9,7 +9,7 @@ Repo: [funky49/SS_RF1](https://github.com/funky49/SS_RF1) (Sound Seer refactor).
 - **Top strip** — live mic waveform  
 - **DATA** — dB, RMS, peak (+ hold), pitch/note, ZCR, spectral centroid, loudness with real-world comparisons, mic disclaimer, multi-mic best-input picker  
 - **GRAPH** — waveform, FFT bars, spectrogram, circular/radial, waterfall; zoom presets; frequency band color markers; frequency-axis zoom/pan and band zoom buttons; fullscreen + portrait  
-- **TOYS** — mic/device info, sound toys (sweep, Quindar, bird, noise+HPF), flash-to-bang, room size, RPM, leak/hiss, loudness dose, periodicity, pitch/note, BPM (auto + tap), **mosquito detector**, **approaching-aircraft detector**
+- **TOYS** — Settings (units: Metric / American), mic/device info, sound toys (sweep, Quindar, bird, noise+HPF), flash-to-bang, room size, RPM, leak/hiss, loudness dose, periodicity, pitch/note, BPM (auto + tap), **mosquito detector**, **approaching-aircraft detector**
 
 ### Mosquito + aircraft detectors (TOYS)
 
@@ -92,9 +92,29 @@ npx cap open android
 |--------|---------|
 | `npm start` | Zero-dependency static server for `www` on port 4173 (prints local + LAN URLs) |
 | `npm run serve` | Same as `npm start` |
-| `npm test` | Unit tests for the detector DSP (synthetic signals, Node 18+) |
+| `npm test` | Node unit tests (`tests/*.test.js`, `tests/*.test.mjs`; Node 18+) |
 | `npm run cap:sync` | Copy web assets into Android project |
 | `npm run cap:open:android` | Open Android Studio |
+
+## Units (Metric / American)
+
+TOYS → Settings has a Metric / American toggle, saved in `localStorage` (`soundseer.units.v1`). The default comes from `navigator.language` (`*-US` → American, otherwise Metric); a saved choice wins. Frequencies, dB, BPM and RPM are never converted.
+
+Reuse in new tools with `www/js/units.js`: compute in SI, format for display, and re-render on change.
+
+```js
+import { formatDistance, formatLength, formatSpeed, formatTemperature,
+         temperatureToCelsius, onUnitsChange, getSystem } from "./units.js";
+
+formatDistance(meters);        // "343 m" / "1.50 km"  |  "1125 ft" / "0.93 mi"
+formatLength(meters);          // "4.3 m" / "50 cm"    |  "14.1 ft" / "4 in"
+formatSpeed(mps);              // "343.0 m/s"          |  "1125.3 ft/s"  ({ large: true } → km/h | mph)
+formatTemperature(celsius);    // "20.0°C"             |  "68.0°F"       ({ digits: 0 })
+const c = temperatureToCelsius(inputValue, getSystem());   // user input → SI
+onUnitsChange(() => render());                             // live updates
+```
+
+In HTML, `<span data-unit="temperature">°C</span>` is relabelled automatically (`temperature`, `length`, `distance`, `speed`). Run the unit tests with `npm test`.
 
 ## Disclaimer
 
