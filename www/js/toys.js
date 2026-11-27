@@ -6,6 +6,16 @@ import {
   DoseMeter,
   PeakHold,
 } from "./metrics.js";
+import {
+  formatDistance,
+  formatLength,
+  formatSpeed,
+  formatTemperature,
+  temperature,
+  temperatureToCelsius,
+  onUnitsChange,
+  getSystem,
+} from "./units.js";
 
 function speedOfSound(tempC) {
   return 331.3 + 0.606 * tempC;
@@ -22,7 +32,26 @@ export class ToysController {
     this.roomArmed = false;
     this.roomBaseline = 0;
     this.roomPeakAt = 0;
+    this.fbTempC = 20;
+    this.lastFlashBang = null;
+    this.lastRoom = null;
     this._bind();
+    this._bindUnits();
+  }
+
+  _bindUnits() {
+    const input = document.getElementById("fb-temp");
+    input?.addEventListener("input", () => {
+      if (input.value.trim() === "" || !Number.isFinite(Number(input.value))) return;
+      this.fbTempC = temperatureToCelsius(Number(input.value), getSystem());
+    });
+    const sync = () => {
+      if (input) input.value = String(Number(temperature(this.fbTempC, getSystem()).value.toFixed(1)));
+      this._renderFlashBang();
+      this._renderRoom();
+    };
+    onUnitsChange(sync);
+    sync();
   }
 
   _bind() {
@@ -43,6 +72,7 @@ export class ToysController {
 
     document.getElementById("fb-flash")?.addEventListener("click", () => {
       this.flashAt = performance.now();
+      this.lastFlashBang = null;
       document.getElementById("fb-result").textContent = "Flash marked — waiting for bang…";
     });
 
@@ -56,10 +86,12 @@ export class ToysController {
       this.roomArmed = true;
       this.roomBaseline = 0;
       this.roomPeakAt = 0;
+      this.lastRoom = null;
       document.getElementById("room-result").textContent = "Armed — clap now.";
     });
     document.getElementById("room-reset")?.addEventListener("click", () => {
       this.roomArmed = false;
+      this.lastRoom = null;
       document.getElementById("room-result").textContent = "—";
     });
 
@@ -102,14 +134,30 @@ export class ToysController {
       return;
     }
     const dt = (now - this.flashAt) / 1000;
-    const temp = Number(document.getElementById("fb-temp")?.value || 20);
-    const c = speedOfSound(temp);
-    const meters = c * dt;
-    const miles = meters / 1609.34;
-    document.getElementById("fb-result").textContent =
-      `${dt.toFixed(2)} s · ${meters.toFixed(0)} m · ${miles.toFixed(2)} mi ` +
-      `(c≈${c.toFixed(1)} m/s @ ${temp}°C)`;
+    const input = document.getElementById("fb-temp");
+    if (input && input.value.trim() !== "" && Number.isFinite(Number(input.value))) {
+      this.fbTempC = temperatureToCelsius(Number(input.value), getSystem());
+    }
+    const c = speedOfSound(this.fbTempC);
+    this.lastFlashBang = { dt, meters: c * dt, c, tempC: this.fbTempC };
+    this._renderFlashBang();
     this.flashArmed = false;
+  }
+
+  _renderFlashBang() {
+    const el = document.getElementById("fb-result");
+    const r = this.lastFlashBang;
+    if (!el || !r) return;
+    el.textContent =
+      `${r.dt.toFixed(2)} s · ${formatDistance(r.meters)} ` +
+      `(c≈${formatSpeed(r.c)} @ ${formatTemperature(r.tempC, { digits: 0 })})`;
+  }
+
+  _renderRoom() {
+    const el = document.getElementById("room-result");
+    const r = this.lastRoom;
+    if (!el || !r) return;
+    el.textContent = `Echo Δt ${r.dt.toFixed(3)} s · ≈ ${formatLength(r.dist)} to reflective surface`;
   }
 
   updateDeviceInfo() {
@@ -161,8 +209,8 @@ export class ToysController {
       } else if (this.roomPeakAt && now - this.roomPeakAt > 30 && peak > this.roomBaseline * 0.35 && peak > 0.12) {
         const dt = (now - this.roomPeakAt) / 1000;
         const dist = (speedOfSound(20) * dt) / 2;
-        document.getElementById("room-result").textContent =
-          `Echo Δt ${dt.toFixed(3)} s · ≈ ${dist.toFixed(1)} m to reflective surface`;
+        this.lastRoom = { dt, dist };
+        this._renderRoom();
         this.roomArmed = false;
       } else if (this.roomPeakAt && now - this.roomPeakAt > 2500) {
         document.getElementById("room-result").textContent = "No clear echo detected.";

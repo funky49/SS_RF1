@@ -126,6 +126,16 @@
 
       <!-- TOYS -->
       <section id="panel-toys" class="panel" role="tabpanel" hidden>
+        <div id="settings-block" class="settings-block">
+          <h2>Settings</h2>
+          <div class="settings-row">
+            <span class="settings-label" id="units-label">Units</span>
+            <div class="seg" role="group" aria-labelledby="units-label">
+              <button class="seg-btn" type="button" data-units-set="metric" aria-pressed="false">Metric</button>
+              <button class="seg-btn" type="button" data-units-set="american" aria-pressed="false">American</button>
+            </div>
+          </div>
+        </div>
         <div class="toys-layout">
           <aside class="toys-nav">
             <h2>Tools</h2>
@@ -162,7 +172,7 @@
             <div class="toy-panel" data-tool-panel="flashbang" hidden>
               <h3>Flash-to-bang distance</h3>
               <p class="hint">Tap Flash at the lightning flash, then wait for thunder (auto) or tap Bang.</p>
-              <label>Air temp (°C) <input id="fb-temp" type="number" value="20" step="1" /></label>
+              <label>Air temp (<span data-unit="temperature">°C</span>) <input id="fb-temp" type="number" value="20" step="1" /></label>
               <div class="btn-row">
                 <button id="fb-flash" class="btn" type="button">Flash</button>
                 <button id="fb-bang" class="btn" type="button">Bang</button>

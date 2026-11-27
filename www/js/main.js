@@ -13,6 +13,7 @@ import {
 } from "./metrics.js";
 import { VisualizerHost, drawStripWave, renderBandLegend } from "./visualizers.js";
 import { ToysController } from "./toys.js";
+import { bindUnitsUI } from "./units-ui.js";
 
 const engine = new AudioEngine();
 const settings = loadSettings();
@@ -235,6 +236,7 @@ document.querySelectorAll(".toy-btn").forEach((btn) => {
   btn.addEventListener("click", () => saveSettings({ tool: btn.dataset.tool }));
 });
 
+bindUnitsUI();
 showApp();
 loop();
 
